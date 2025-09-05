@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Telegram Web Chat</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #17212B;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background: #2B5278;
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .chat-info {
+            display: flex;
+            align-items: center;
+        }
+
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #4A90E2;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 12px;
+            font-weight: bold;
+            font-size: 18px;
+        }
+
+        .chat-details h3 {
+            font-size: 16px;
+            margin-bottom: 2px;
+        }
+
+        .chat-details p {
+            font-size: 12px;
+            color: #B8C5D1;
+        }
+
+        .connection-status {
+            padding: 5px 15px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .connected {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .disconnected {
+            background: #F44336;
+            color: white;
+        }
+
+        .setup-panel {
+            background: #1E2832;
+            margin: 20px;
+            padding: 20px;
+            border-radius: 10px;
+            color: white;
+        }
+
+        .setup-panel h3 {
+            color: #4A90E2;
+            margin-bottom: 15px;
+        }
+
+        .setup-form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .form-group label {
+            color: #B8C5D1;
+            font-size: 14px;
+        }
+
+        .form-group input {
+            padding: 10px;
+            border: 1px solid #2B5278;
+            border-radius: 5px;
+            background: #0E1621;
+            color: white;
+            font-size: 14px;
+        }
+
+        .form-group input::placeholder {
+            color: #8A9BA8;
+        }
+
+        .connect-button {
+            background: #4A90E2;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+
+        .connect-button:hover {
+            background: #357ABD;
+        }
+
+        .connect-button:disabled {
+            background: #2B5278;
+            cursor: not-allowed;
+        }
+
+        .messages-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            background: #0E1621;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .message {
+            display: flex;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        .message.sent {
+            justify-content: flex-end;
+        }
+
+        .message.received {
+            justify-content: flex-start;
+        }
+
+        .message.system {
+            justify-content: center;
+        }
+
+        .message-bubble {
+            max-width: 70%;
+            padding: 10px 15px;
+            border-radius: 18px;
+            position: relative;
+            word-wrap: break-word;
+        }
+
+        .message.sent .message-bubble {
+            background: #4A90E2;
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+
+        .message.received .message-bubble {
+            background: #1E2832;
+            color: #FFFFFF;
+            border-bottom-left-radius: 4px;
+        }
+
+        .message.system .message-bubble {
+            background: #2B5278;
+            color: #B8C5D1;
+            border-radius: 15px;
+            font-size: 12px;
+            max-width: 90%;
+        }
+
+        .message-info {
+            display: flex;
+            align-items: center;
+            margin-top: 5px;
+            font-size: 11px;
+            color: rgba(255,255,255,0.5);
+        }
+
+        .message.sent .message-info {
+            justify-content: flex-end;
+        }
+
+        .sender-name {
+            font-weight: bold;
+            font-size: 13px;
+            margin-bottom: 3px;
+        }
+
+        .message.sent .sender-name {
+            display: none;
+        }
+
+        .input-container {
+            background: #17212B;
+            padding: 15px 20px;
+            border-top: 1px solid #2B5278;
+        }
+
+        .input-wrapper {
+            display: flex;
+            align-items: center;
+            background: #1E2832;
+            border-radius: 25px;
+            padding: 10px 15px;
+        }
+
+        .name-input {
+            background: none;
+            border: none;
+            color: #4A90E2;
+            padding: 5px 10px;
+            margin-right: 10px;
+            border-radius: 15px;
+            background: rgba(74, 144, 226, 0.1);
+            font-size: 12px;
+            width: 100px;
+        }
+
+        .name-input::placeholder {
+            color: rgba(74, 144, 226, 0.5);
+        }
+
+        .message-input {
+            flex: 1;
+            background: none;
+            border: none;
+            color: white;
+            padding: 8px 12px;
+            font-size: 14px;
+            outline: none;
+        }
+
+        .message-input::placeholder {
+            color: #8A9BA8;
+        }
+
+        .send-button {
+            background: #4A90E2;
+            border: none;
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-left: 10px;
+            transition: background 0.2s;
+        }
+
+        .send-button:hover {
+            background: #357ABD;
+        }
+
+        .send-button:disabled {
+            background: #2B5278;
+            cursor: not-allowed;
+        }
+
+        .instructions {
+            background: #1E2832;
+            margin: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            color: #B8C5D1;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .instructions h4 {
+            color: #4A90E2;
+            margin-bottom: 10px;
+        }
+
+        .instructions ol {
+            margin-left: 20px;
+        }
+
+        .instructions li {
+            margin-bottom: 5px;
+        }
+
+        .instructions code {
+            background: #0E1621;
+            padding: 2px 6px;
+            border-radius: 3px;
+            color: #4A90E2;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .message-bubble {
+                max-width: 85%;
+            }
+            
+            .name-input {
+                width: 80px;
+                font-size: 11px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="chat-info">
+            <div class="avatar">T</div>
+            <div class="chat-details">
+                <h3>Telegram Web Chat</h3>
+                <p id="chatId">กรุณาตั้งค่าบอทก่อน</p>
+            </div>
+        </div>
+        <div id="connectionStatus" class="connection-status disconnected">
+            ไม่ได้เชื่อมต่อ
+        </div>
+    </div>
+
+    <div id="setupPanel" class="setup-panel">
+        <h3>🤖 ตั้งค่า Telegram Bot</h3>
+        <div class="setup-form">
+            <div class="form-group">
+                <label for="botToken">Bot Token:</label>
+                <input type="text" id="botToken" placeholder="ใส่ Bot Token ที่ได้จาก @BotFather">
+            </div>
+            <div class="form-group">
+                <label for="chatIdInput">Chat ID:</label>
+                <input type="text" id="chatIdInput" placeholder="ใส่ Chat ID ของกลุ่มหรือแชทส่วนตัว">
+            </div>
+            <button id="connectButton" class="connect-button">เชื่อมต่อ</button>
+        </div>
+    </div>
+
+    <div id="instructionsPanel" class="instructions">
+        <h4>📋 วิธีการตั้งค่า:</h4>
+        <ol>
+            <li>ไปหา <code>@BotFather</code> ใน Telegram</li>
+            <li>พิมพ์ <code>/newbot</code> และตั้งชื่อบอท</li>
+            <li>คัดลอก Bot Token ที่ได้มาใส่ในช่องด้านบน</li>
+            <li>เพิ่มบอทเข้ากลุ่มหรือแชทที่ต้องการ</li>
+            <li>หา Chat ID โดยส่งข้อความในแชทแล้วไปที่: <code>https://api.telegram.org/bot[BOT_TOKEN]/getUpdates</code></li>
+            <li>คัดลอก Chat ID มาใส่ในช่องด้านบน</li>
+            <li>กดเชื่อมต่อ</li>
+        </ol>
+    </div>
+
+    <div id="chatContainer" class="hidden">
+        <div class="messages-container" id="messagesContainer">
+            <!-- ข้อความจะแสดงที่นี่ -->
+        </div>
+
+        <div class="input-container">
+            <div class="input-wrapper">
+                <input type="text" class="name-input" id="nameInput" placeholder="ชื่อของคุณ" maxlength="20">
+                <input type="text" class="message-input" id="messageInput" placeholder="พิมพ์ข้อความ...">
+                <button class="send-button" id="sendButton">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class TelegramWebChat {
+            constructor() {
+                this.botToken = '';
+                this.chatId = '';
+                this.lastUpdateId = 0;
+                this.polling = false;
+                this.currentUser = '';
+                this.isConnected = false;
+                
+                this.initElements();
+                this.bindEvents();
+            }
+
+            initElements() {
+                this.setupPanel = document.getElementById('setupPanel');
+                this.instructionsPanel = document.getElementById('instructionsPanel');
+                this.chatContainer = document.getElementById('chatContainer');
+                this.messagesContainer = document.getElementById('messagesContainer');
+                this.messageInput = document.getElementById('messageInput');
+                this.nameInput = document.getElementById('nameInput');
+                this.sendButton = document.getElementById('sendButton');
+                this.botTokenInput = document.getElementById('botToken');
+                this.chatIdInput = document.getElementById('chatIdInput');
+                this.connectButton = document.getElementById('connectButton');
+                this.connectionStatus = document.getElementById('connectionStatus');
+                this.chatIdDisplay = document.getElementById('chatId');
+            }
+
+            bindEvents() {
+                this.connectButton.addEventListener('click', () => this.connect());
+                this.sendButton.addEventListener('click', () => this.sendMessage());
+                this.messageInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') this.sendMessage();
+                });
+                
+                // บันทึกข้อมูลขณะพิมพ์
+                this.botTokenInput.addEventListener('input', (e) => {
+                    this.botToken = e.target.value.trim();
+                });
+                
+                this.chatIdInput.addEventListener('input', (e) => {
+                    this.chatId = e.target.value.trim();
+                });
+                
+                this.nameInput.addEventListener('input', (e) => {
+                    this.currentUser = e.target.value.trim() || 'ผู้ใช้เว็บ';
+                });
+            }
+
+            async connect() {
+                if (!this.botToken || !this.chatId) {
+                    alert('กรุณากรอก Bot Token และ Chat ID');
+                    return;
+                }
+
+                this.connectButton.disabled = true;
+                this.connectButton.textContent = 'กำลังเชื่อมต่อ...';
+
+                try {
+                    // ทดสอบการเชื่อมต่อ
+                    const response = await fetch(`https://api.telegram.org/bot${this.botToken}/getMe`);
+                    const data = await response.json();
+
+                    if (data.ok) {
+                        this.isConnected = true;
+                        this.setupPanel.classList.add('hidden');
+                        this.instructionsPanel.classList.add('hidden');
+                        this.chatContainer.classList.remove('hidden');
+                        
+                        this.connectionStatus.textContent = 'เชื่อมต่อแล้ว';
+                        this.connectionStatus.className = 'connection-status connected';
+                        this.chatIdDisplay.textContent = `Chat ID: ${this.chatId}`;
+                        
+                        this.addSystemMessage('✅ เชื่อมต่อ Telegram สำเร็จ!');
+                        this.startPolling();
+                        
+                        // ส่งข้อความแจ้งเข้าระบบ
+                        await this.sendToTelegram('🌐 ผู้ใช้เข้าร่วมแชทผ่านเว็บไซต์', 'ระบบ');
+                        
+                    } else {
+                        throw new Error(data.description || 'Bot Token ไม่ถูกต้อง');
+                    }
+                } catch (error) {
+                    alert(`เชื่อมต่อไม่สำเร็จ: ${error.message}`);
+                    this.connectButton.disabled = false;
+                    this.connectButton.textContent = 'เชื่อมต่อ';
+                }
+            }
+
+            async sendToTelegram(message, sender) {
+                const fullMessage = `💬 ${sender}: ${message}`;
+                
+                try {
+                    const response = await fetch(`https://api.telegram.org/bot${this.botToken}/sendMessage`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            chat_id: this.chatId,
+                            text: fullMessage,
+                            parse_mode: 'HTML'
+                        })
+                    });
+
+                    const data = await response.json();
+                    if (!data.ok) {
+                        console.error('Error sending to Telegram:', data.description);
+                        this.addSystemMessage('❌ ส่งข้อความไป Telegram ไม่สำเร็จ');
+                    }
+                } catch (error) {
+                    console.error('Network error:', error);
+                    this.addSystemMessage('❌ เกิดข้อผิดพลาดในการส่งข้อความ');
+                }
+            }
+
+            async getUpdates() {
+                try {
+                    const response = await fetch(`https://api.telegram.org/bot${this.botToken}/getUpdates?offset=${this.lastUpdateId + 1}&limit=10&timeout=5`);
+                    const data = await response.json();
+
+                    if (data.ok && data.result.length > 0) {
+                        for (const update of data.result) {
+                            this.lastUpdateId = update.update_id;
+                            
+                            if (update.message && update.message.text) {
+                                const message = update.message;
+                                const sender = message.from.first_name + (message.from.last_name ? ' ' + message.from.last_name : '');
+                                const text = message.text;
+                                
+                                // ไม่แสดงข้อความที่ส่งจากเว็บไซต์เอง
+                                if (!text.startsWith('💬')) {
+                                    this.addMessage(text, sender, false, true);
+                                }
+                            }
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error getting updates:', error);
+                    if (this.isConnected) {
+                        this.connectionStatus.textContent = 'เชื่อมต่อขาดหาย';
+                        this.connectionStatus.className = 'connection-status disconnected';
+                    }
+                }
+            }
+
+            startPolling() {
+                if (this.polling) return;
+                
+                this.polling = true;
+                const poll = async () => {
+                    if (this.isConnected) {
+                        await this.getUpdates();
+                        setTimeout(poll, 1000);
+                    }
+                };
+                poll();
+            }
+
+            addMessage(text, sender, isSent = false, fromTelegram = false) {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `message ${isSent ? 'sent' : 'received'}`;
+                
+                const bubbleDiv = document.createElement('div');
+                bubbleDiv.className = 'message-bubble';
+                
+                if (!isSent) {
+                    const senderDiv = document.createElement('div');
+                    senderDiv.className = 'sender-name';
+                    senderDiv.textContent = sender + (fromTelegram ? ' 📱' : ' 🌐');
+                    senderDiv.style.color = this.getUserColor(sender);
+                    bubbleDiv.appendChild(senderDiv);
+                }
+                
+                const textDiv = document.createElement('div');
+                textDiv.textContent = text;
+                bubbleDiv.appendChild(textDiv);
+                
+                const infoDiv = document.createElement('div');
+                infoDiv.className = 'message-info';
+                infoDiv.innerHTML = `<span>${this.formatTime()}</span>`;
+                bubbleDiv.appendChild(infoDiv);
+                
+                messageDiv.appendChild(bubbleDiv);
+                this.messagesContainer.appendChild(messageDiv);
+                
+                this.messagesContainer.scrollTop = this.messagesContainer.scrollHeight;
+            }
+
+            addSystemMessage(text) {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = 'message system';
+                
+                const bubbleDiv = document.createElement('div');
+                bubbleDiv.className = 'message-bubble';
+                bubbleDiv.textContent = text;
+                
+                messageDiv.appendChild(bubbleDiv);
+                this.messagesContainer.appendChild(messageDiv);
+                
+                this.messagesContainer.scrollTop = this.messagesContainer.scrollHeight;
+            }
+
+            async sendMessage() {
+                const message = this.messageInput.value.trim();
+                const name = this.nameInput.value.trim() || 'ผู้ใช้เว็บ';
+                
+                if (!message) return;
+                if (!this.isConnected) {
+                    alert('กรุณาเชื่อมต่อ Telegram Bot ก่อน');
+                    return;
+                }
+                
+                this.currentUser = name;
+                
+                // แสดงข้อความในเว็บไซต์
+                this.addMessage(message, name, true);
+                
+                // ส่งไป Telegram
+                await this.sendToTelegram(message, name);
+                
+                this.messageInput.value = '';
+            }
+
+            getUserColor(username) {
+                const colors = [
+                    '#E53E3E', '#DD6B20', '#D69E2E', '#38A169',
+                    '#00B5D8', '#3182CE', '#805AD5', '#D53F8C'
+                ];
+                let hash = 0;
+                for (let i = 0; i < username.length; i++) {
+                    hash = username.charCodeAt(i) + ((hash << 5) - hash);
+                }
+                return colors[Math.abs(hash) % colors.length];
+            }
+
+            formatTime() {
+                const now = new Date();
+                return now.toLocaleTimeString('th-TH', { 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                });
+            }
+        }
+
+        // เริ่มต้นแอพ
+        const chat = new TelegramWebChat();
+    </script>
+</body>
+</html>
